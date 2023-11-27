@@ -1,11 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Middagsasen.Planner.Api.Authentication;
 using Middagsasen.Planner.Api.Services;
 using Middagsasen.Planner.Api.Services.Users;
 
 namespace Middagsasen.Planner.Api.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController, Authorize]
     public class UsersController : ControllerBase
     {
@@ -16,7 +15,7 @@ namespace Middagsasen.Planner.Api.Controllers
 
         public IUserService UserService { get; }
 
-        [HttpGet("me")]
+        [HttpGet("api/me")]
         public async Task<IActionResult> Me()
         {
             var user = (UserResponse?)HttpContext.Items["User"];
@@ -26,7 +25,7 @@ namespace Middagsasen.Planner.Api.Controllers
             return Ok(response);
         }
 
-        [HttpGet("")]
+        [HttpGet("api/users")]
         public async Task<IActionResult> GetUsers()
         {
             var user = (UserResponse?)HttpContext.Items["User"];

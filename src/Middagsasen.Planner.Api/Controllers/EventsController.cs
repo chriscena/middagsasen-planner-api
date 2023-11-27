@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Middagsasen.Planner.Api.Authentication;
 
 namespace Middagsasen.Planner.Api.Controllers
 {
