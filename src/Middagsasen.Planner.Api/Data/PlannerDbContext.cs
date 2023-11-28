@@ -16,6 +16,7 @@ namespace Middagsasen.Planner.Api.Data
 
         public virtual DbSet<User> Users { get; set; } = null!;
         public virtual DbSet<UserSession> UserSessions { get; set; } = null!;
+        public virtual DbSet<ResourceType> ResourceTypes { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -43,6 +44,12 @@ namespace Middagsasen.Planner.Api.Data
                     .HasForeignKey(d => d.UserId)
                     .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("FK_UserSessions_Users");
+            });
+
+            modelBuilder.Entity<ResourceType>(entity =>
+            {
+                entity.HasKey(e => e.ResourceTypeId);
+                entity.Property(e => e.Name).HasMaxLength(400);
             });
         }
     }
