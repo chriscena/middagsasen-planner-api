@@ -51,7 +51,7 @@ namespace Middagsasen.Planner.Api.Services.Events
             return Map(resourceType);
         }
 
-        public async Task<ResourceTypeResponse> DeleteResourceType(int id)
+        public async Task<ResourceTypeResponse?> DeleteResourceType(int id)
         {
             var resourceType = await DbContext.ResourceTypes.SingleOrDefaultAsync(r => r.ResourceTypeId == id);
             if (resourceType == null) { return null; }
@@ -61,8 +61,6 @@ namespace Middagsasen.Planner.Api.Services.Events
             await DbContext.SaveChangesAsync();
             return Map(resourceType);
         }
-
-
 
         private ResourceTypeResponse Map(ResourceType resourceType) => new ResourceTypeResponse
         {

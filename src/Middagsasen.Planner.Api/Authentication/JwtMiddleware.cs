@@ -1,11 +1,11 @@
-﻿namespace Middagsasen.Planner.Api.Authentication
-{
-    using Microsoft.IdentityModel.Tokens;
-    using Middagsasen.Planner.Api.Services;
-    using System.IdentityModel.Tokens.Jwt;
-    using System.Security.Claims;
-    using System.Text;
+﻿using Microsoft.IdentityModel.Tokens;
+using Middagsasen.Planner.Api.Services;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
+namespace Middagsasen.Planner.Api.Authentication
+{
     public interface IAuthSettings
     {
         string Secret { get; }

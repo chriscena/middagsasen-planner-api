@@ -2,7 +2,7 @@
 {
     public class ResourceTypeRequest
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
         public int DefaultStaff { get; set; }
     }
 }
