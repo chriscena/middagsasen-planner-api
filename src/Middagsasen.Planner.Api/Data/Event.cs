@@ -1,11 +1,11 @@
 ﻿namespace Middagsasen.Planner.Api.Data
 {
-    public class ResourceType
+    public class Event
     {
-        public int ResourceTypeId { get; set; }
+        public int EventId { get; set; }
         public string Name { get; set; } = null!;
-        public int DefaultStaff { get; set; } = 1;
-        public bool Inactive { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
 
         public ICollection<EventResource> Resources { get; set; } = new HashSet<EventResource>();
     }

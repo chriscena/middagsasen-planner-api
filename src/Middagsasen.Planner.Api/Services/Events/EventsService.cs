@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Middagsasen.Planner.Api.Data;
 
 namespace Middagsasen.Planner.Api.Services.Events
@@ -62,6 +63,18 @@ namespace Middagsasen.Planner.Api.Services.Events
             return Map(resourceType);
         }
 
+        public async Task<IEnumerable<EventResponse?>> GetEvents()
+        {
+            var events = await DbContext.Events
+                .Include(e => e.Resources)
+                    .ThenInclude(r => r.Shifts)
+                        .ThenInclude(s => s.User)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return events.Select(Map).ToList();
+        }
+
         private ResourceTypeResponse Map(ResourceType resourceType) => new ResourceTypeResponse
         {
             Id = resourceType.ResourceTypeId,
@@ -69,6 +82,41 @@ namespace Middagsasen.Planner.Api.Services.Events
             DefaultStaff = resourceType.DefaultStaff,
         };
 
+        private EventResponse Map(Event evnt) => new EventResponse 
+        {
+            Id = evnt.EventId,
+            Name = evnt.Name,
+            StartTime = evnt.StartTime.ToSimpleIsoString(),
+            EndTime = evnt.EndTime.ToSimpleIsoString(),
+            Resources = evnt.Resources.Select(Map).ToList()
+        };
 
+        private ResourceResponse Map(EventResource resource) => new ResourceResponse
+        {
+            Id = resource.EventResourceId,
+            ResourceType = Map(resource.ResourceType),
+            StartTime = resource.StartTime.ToSimpleIsoString(),
+            EndTime = resource.EndTime.ToSimpleIsoString(),
+            MinimumStaff = resource.MinimumStaff,
+            Shifts = resource.Shifts.Select(Map).ToList()
+        };
+
+        private ShiftResponse Map(EventResourceUser shift) => new ShiftResponse
+        {
+            Id = shift.EventResourceUserId,
+            User = Map(shift.User),
+            StartTime = shift.StartTime,
+            EndTime = shift.EndTime,
+            Comment = shift.Comment,
+        };
+
+        private ShiftUserResponse Map(User user) => new ShiftUserResponse
+        {
+            Id = user.UserId,
+            PhoneNumber = user.UserName,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            FullName = $"{user.FirstName ?? ""} {user.LastName ?? ""}".Trim(),
+        };
     }
 }

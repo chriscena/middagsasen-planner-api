@@ -13,6 +13,7 @@
         public bool IsAdmin { get; set; }
         public DateTime Created { get; set; }
 
-        public virtual ICollection<UserSession>? Sessions { get; set; }
+        public virtual ICollection<UserSession> Sessions { get; set; } = new HashSet<UserSession>();
+        public virtual ICollection<EventResourceUser> Shifts { get; set; } = new HashSet<EventResourceUser>();
     }
 }
