@@ -37,7 +37,7 @@ namespace Middagsasen.Planner.Api.Services.Users
 
             user.FirstName = request.FirstName;
             user.LastName = request.LastName;
-            if (request.Password != null && request.Password.Length > 8) {
+            if (request.Password != null) {
                 var salt = PasswordHasher.CreateSalt();
                 var password = PasswordHasher.HashPassword(request.Password, salt);
                 user.Salt = salt;

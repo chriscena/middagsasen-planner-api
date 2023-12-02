@@ -47,7 +47,8 @@ namespace Middagsasen.Planner.Api.Authentication
                 }, out SecurityToken validatedToken);
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
-                var sessionId = Guid.Parse(jwtToken.Claims.First(x => x.Type == "id").Value);
+                var sessionIdString = jwtToken.Claims.First(x => x.Type == "id").Value;
+                var sessionId = Guid.Parse(sessionIdString);
 
                 var user = await userService.GetUserBySessionId(sessionId);
                 if (user == null) return;
@@ -62,8 +63,9 @@ namespace Middagsasen.Planner.Api.Authentication
                         new Claim(ClaimTypes.GivenName, user.FirstName ?? "", ClaimValueTypes.String),
                         new Claim(ClaimTypes.Surname, user.LastName ?? "", ClaimValueTypes.String),
                         new Claim(ClaimTypes.Role, user.IsAdmin ? "Administrator" : "User", ClaimValueTypes.String),
+                        new Claim(ClaimTypes.Authentication, sessionIdString, ClaimValueTypes.String)
                     },
-                    "Password", ClaimTypes.Name, ClaimTypes.Role));
+                    "Password", ClaimTypes.Name, ClaimTypes.Role)); ;
             }
             catch
             {
