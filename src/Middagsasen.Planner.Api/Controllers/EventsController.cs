@@ -52,6 +52,13 @@ namespace Middagsasen.Planner.Api.Controllers
             return Created($"/api/shifts/{response.Id}", response);
         }
 
+        [HttpPut("api/shifts/{id}")]
+        public async Task<IActionResult> UpdateShift(int id, [FromBody] ShiftRequest request)
+        {
+            var shift = await EventsService.UpdateShift(id, request);
+            return (shift == null) ? NotFound() : Ok(shift);
+        }
+
         [HttpDelete("api/shifts/{id}")]
         public async Task<IActionResult> DeleteShift(int id)
         {

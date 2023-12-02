@@ -164,6 +164,23 @@ namespace Middagsasen.Planner.Api.Services.Events
             return responseShift == null ? null : Map(responseShift);
         }
 
+        public async Task<ShiftResponse?> UpdateShift(int id, ShiftRequest request)
+        {
+            var shift = await DbContext.Shifts.Include(s => s.User).SingleOrDefaultAsync(s => s.EventResourceUserId == id);
+            if (shift == null) return null;
+
+            if (request.StartTime.HasValue)
+                shift.StartTime = request.StartTime;
+            
+            if (request.EndTime.HasValue)
+                shift.EndTime = request.EndTime;
+            
+            shift.Comment = request.Comment;
+
+            await DbContext.SaveChangesAsync();
+            return Map(shift);
+        }
+
         public async Task<ShiftResponse?> DeleteShift(int id)
         {
             var shift = await DbContext.Shifts.Include(s =>s.User).SingleOrDefaultAsync(s => s.EventResourceUserId == id);
