@@ -20,7 +20,7 @@ namespace Middagsasen.Planner.Api.Services.Users
 
         public async Task<IEnumerable<UserResponse>> GetUsers()
         {
-            var users =  await DbContext.Users.AsNoTracking().ToListAsync();
+            var users =  await DbContext.Users.Where(u => !u.Inactive).AsNoTracking().ToListAsync();
             return users.Select(Map).ToList();
         }
 
@@ -33,6 +33,7 @@ namespace Middagsasen.Planner.Api.Services.Users
         public async Task<UserResponse?> UpdateUser(int id, UserRequest request)
         {
             var user = await DbContext.Users.SingleOrDefaultAsync(u => u.UserId == id);
+            if (user == null) return null;
 
             user.FirstName = request.FirstName;
             user.LastName = request.LastName;
@@ -44,9 +45,26 @@ namespace Middagsasen.Planner.Api.Services.Users
             }
             await DbContext.SaveChangesAsync();
 
-            return user != null ? Map(user) : null;
+            return Map(user);
         }
 
+        public async Task<IEnumerable<PhoneResponse>> GetPhoneList()
+        {
+            var users = await DbContext.Users.Where(u => !u.Inactive && !u.IsHidden).AsNoTracking().ToListAsync();
+            return users.Select(MapToPhone).OrderBy(u => u.FullName).ToList();
+        }
+
+        private PhoneResponse MapToPhone(User user)
+        {
+            return new PhoneResponse
+            {
+                Id = user.UserId,
+                PhoneNo = user.UserName,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                FullName = $"{user.FirstName ?? ""} {user.LastName ?? ""}".Trim(),
+            };
+        }
         private UserResponse Map(User user)
         {
             return new UserResponse

@@ -37,6 +37,13 @@ namespace Middagsasen.Planner.Api.Controllers
             return Ok(response);
         }
 
+        [HttpGet("api/users/phone")]
+        public async Task<IActionResult> GetPhoneList()
+        {
+            var response = await UserService.GetPhoneList();
+            return Ok(response);
+        }
+
         [HttpGet("api/users")]
         public async Task<IActionResult> GetUsers()
         {
