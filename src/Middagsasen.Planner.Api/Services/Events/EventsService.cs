@@ -1,10 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Middagsasen.Planner.Api.Data;
 
 namespace Middagsasen.Planner.Api.Services.Events
 {
-    public class EventsService : IResourceTypesService
+    public class EventsService : IResourceTypesService, IEventsService
     {
         public EventsService(PlannerDbContext dbContext)
         {
@@ -69,10 +68,110 @@ namespace Middagsasen.Planner.Api.Services.Events
                 .Include(e => e.Resources)
                     .ThenInclude(r => r.Shifts)
                         .ThenInclude(s => s.User)
+                .Include(e => e.Resources)
+                    .ThenInclude(r => r.ResourceType)
                 .AsNoTracking()
                 .ToListAsync();
 
             return events.Select(Map).ToList();
+        }
+
+        public async Task<IEnumerable<EventResponse?>> GetEvents(DateTime start, DateTime end)
+        {
+            var events = await DbContext.Events
+                .Include(e => e.Resources)
+                    .ThenInclude(r => r.Shifts)
+                        .ThenInclude(s => s.User)
+                .Include(e => e.Resources)
+                    .ThenInclude(r => r.ResourceType)
+                .AsNoTracking()
+                .Where(e => e.StartTime >= start && e.StartTime < end)
+                .AsSplitQuery()
+                .ToListAsync();
+
+            return events.Select(Map).ToList();
+        }
+
+        public async Task<EventResponse?> GetEventById(int id)
+        {
+            var existingEvent = await DbContext.Events
+                .Include(e => e.Resources)
+                    .ThenInclude(r => r.Shifts)
+                        .ThenInclude(s => s.User)
+                .Include(e => e.Resources)
+                    .ThenInclude(r => r.ResourceType)
+                .AsNoTracking()
+                .SingleOrDefaultAsync(e => e.EventId == id);
+
+            return (existingEvent == null) ? null : Map(existingEvent);
+        }
+
+        public async Task<EventResponse?> CreateEvent(EventRequest request)
+        {
+            var newEvent = new Event
+            {
+                Name = request.Name,
+                StartTime = DateTime.Parse(request.StartTime),
+                EndTime = DateTime.Parse(request.EndTime),
+                Resources = request.Resources.Select(Map).ToList(),
+            };
+
+            DbContext.Events.Add(newEvent);
+            await DbContext.SaveChangesAsync();
+
+            return await GetEventById(newEvent.EventId);
+        }
+
+        public async Task<EventResponse?> UpdateEvent(int eventId, EventRequest request)
+        {
+            var existingEvent = await DbContext.Events
+                .Include(e => e.Resources)
+                    .ThenInclude(r => r.Shifts)
+                        .ThenInclude(s => s.User)
+                .Include(e => e.Resources)
+                    .ThenInclude(r => r.ResourceType)
+            .SingleOrDefaultAsync(e => e.EventId == eventId);
+
+            if (existingEvent == null) return null;
+
+            existingEvent.Name = request.Name;
+            existingEvent.StartTime = DateTime.Parse(request.StartTime);
+            existingEvent.EndTime = DateTime.Parse(request.EndTime);
+
+            foreach (var resource in request.Resources)
+            {
+
+            }
+            //existingEvent.Resources.
+            await DbContext.SaveChangesAsync();
+
+            return Map(existingEvent);
+        }
+
+        public async Task<ShiftResponse?> AddShift(int eventResourceId, ShiftRequest request)
+        {
+            var newShift = new EventResourceUser
+            {
+                EventResourceId = eventResourceId,
+                UserId = request.UserId,
+                StartTime = request.StartTime,
+                EndTime = request.EndTime,
+            };
+            DbContext.Shifts.Add(newShift);
+            await DbContext.SaveChangesAsync();
+            
+            var responseShift = await DbContext.Shifts.Include(s => s.User).AsNoTracking().SingleOrDefaultAsync(s => s.EventResourceUserId == newShift.EventResourceUserId);
+            return responseShift == null ? null : Map(responseShift);
+        }
+
+        public async Task<ShiftResponse?> DeleteShift(int id)
+        {
+            var shift = await DbContext.Shifts.Include(s =>s.User).SingleOrDefaultAsync(s => s.EventResourceUserId == id);
+            if (shift == null) return null;
+            DbContext.Shifts.Remove(shift);
+            await DbContext.SaveChangesAsync();
+
+            return Map(shift);
         }
 
         private ResourceTypeResponse Map(ResourceType resourceType) => new ResourceTypeResponse
@@ -82,7 +181,7 @@ namespace Middagsasen.Planner.Api.Services.Events
             DefaultStaff = resourceType.DefaultStaff,
         };
 
-        private EventResponse Map(Event evnt) => new EventResponse 
+        private EventResponse Map(Event evnt) => new EventResponse
         {
             Id = evnt.EventId,
             Name = evnt.Name,
@@ -94,6 +193,7 @@ namespace Middagsasen.Planner.Api.Services.Events
         private ResourceResponse Map(EventResource resource) => new ResourceResponse
         {
             Id = resource.EventResourceId,
+            EventId = resource.EventId,
             ResourceType = Map(resource.ResourceType),
             StartTime = resource.StartTime.ToSimpleIsoString(),
             EndTime = resource.EndTime.ToSimpleIsoString(),
@@ -104,6 +204,7 @@ namespace Middagsasen.Planner.Api.Services.Events
         private ShiftResponse Map(EventResourceUser shift) => new ShiftResponse
         {
             Id = shift.EventResourceUserId,
+            EventResourceId = shift.EventResourceId,
             User = Map(shift.User),
             StartTime = shift.StartTime,
             EndTime = shift.EndTime,
@@ -118,5 +219,21 @@ namespace Middagsasen.Planner.Api.Services.Events
             LastName = user.LastName,
             FullName = $"{user.FirstName ?? ""} {user.LastName ?? ""}".Trim(),
         };
+
+        private EventResource Map(ResourceRequest request)
+        {
+            var resource = new EventResource
+            {
+                ResourceTypeId = request.ResourceTypeId,
+                StartTime = DateTime.Parse(request.StartTime),
+                EndTime = DateTime.Parse(request.EndTime),
+                MinimumStaff = request.MinimumStaff,
+            };
+            if (request.Id.HasValue)
+            {
+                resource.EventResourceId = request.Id.Value;
+            }
+            return resource;
+        }
     }
 }

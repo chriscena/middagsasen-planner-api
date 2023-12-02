@@ -22,6 +22,7 @@ namespace Middagsasen.Planner.Api.Data
         public virtual DbSet<UserSession> UserSessions { get; set; } = null!;
         public virtual DbSet<ResourceType> ResourceTypes { get; set; } = null!;
         public virtual DbSet<Event> Events { get; set; } = null!;
+        public virtual DbSet<EventResourceUser> Shifts { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -67,6 +68,7 @@ namespace Middagsasen.Planner.Api.Data
 
             modelBuilder.Entity<EventResource>(entity =>
             {
+                entity.ToTable("EventResources");
                 entity.HasKey(e => e.EventResourceId);
                 entity.Property(e => e.StartTime).HasColumnType("datetime");
                 entity.Property(e => e.EndTime).HasColumnType("datetime");
@@ -86,6 +88,7 @@ namespace Middagsasen.Planner.Api.Data
 
             modelBuilder.Entity<EventResourceUser>(entity =>
             {
+                entity.ToTable("EventResourceUsers");
                 entity.HasKey(e => e.EventResourceUserId);
                 entity.Property(e => e.StartTime).HasColumnType("datetime");
                 entity.Property(e => e.EndTime).HasColumnType("datetime");

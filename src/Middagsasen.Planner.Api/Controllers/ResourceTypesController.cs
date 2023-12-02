@@ -33,7 +33,7 @@ namespace Middagsasen.Planner.Api.Controllers
         public async Task<IActionResult> Create(ResourceTypeRequest request)
         {
             var resourceType = await ResourceTypesService.CreateResourceType(request);
-            return Created($"/resourcetypes/{resourceType.Id}", resourceType);
+            return Created($"/api/resourcetypes/{resourceType.Id}", resourceType);
         }
 
         [HttpPut("{id}")]

@@ -30,6 +30,23 @@ namespace Middagsasen.Planner.Api.Services.Users
             return user != null ? Map(user) : null;
         }
 
+        public async Task<UserResponse?> UpdateUser(int id, UserRequest request)
+        {
+            var user = await DbContext.Users.SingleOrDefaultAsync(u => u.UserId == id);
+
+            user.FirstName = request.FirstName;
+            user.LastName = request.LastName;
+            if (request.Password != null && request.Password.Length > 8) {
+                var salt = PasswordHasher.CreateSalt();
+                var password = PasswordHasher.HashPassword(request.Password, salt);
+                user.Salt = salt;
+                user.EncryptedPassword = password;
+            }
+            await DbContext.SaveChangesAsync();
+
+            return user != null ? Map(user) : null;
+        }
+
         private UserResponse Map(User user)
         {
             return new UserResponse

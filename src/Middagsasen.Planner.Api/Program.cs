@@ -25,6 +25,7 @@ builder.Services.AddDbContext<PlannerDbContext>(options => options.UseSqlServer(
 builder.Services.AddTransient<ISmsSender, SmsSenderService>();
 
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<IEventsService, EventsService>();
 builder.Services.AddScoped<IResourceTypesService, EventsService>();
 builder.Services.AddScoped<IUserService, UserService>();
 

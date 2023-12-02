@@ -3,6 +3,7 @@
     public class ShiftResponse
     {
         public int Id { get; set; }
+        public int EventResourceId { get; set; }
         public ShiftUserResponse User { get; set; } = null!;
         public DateTime? StartTime { get; set; }
         public DateTime? EndTime { get; set; }

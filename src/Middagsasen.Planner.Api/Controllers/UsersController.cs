@@ -25,6 +25,18 @@ namespace Middagsasen.Planner.Api.Controllers
             return Ok(response);
         }
 
+        [HttpPut("api/me")]
+        public async Task<IActionResult> UpdateMe([FromBody]UserRequest request)
+        {
+            var user = (UserResponse?)HttpContext.Items["User"];
+            if (user == null) return Unauthorized();
+
+            var response = await UserService.UpdateUser(user.Id, request);
+            if (response == null) return NotFound($"Fant ikke bruker med ID {user.Id}");
+
+            return Ok(response);
+        }
+
         [HttpGet("api/users")]
         public async Task<IActionResult> GetUsers()
         {
