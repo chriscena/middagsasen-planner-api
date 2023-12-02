@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'Production'
+      name: 'beta'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
@@ -54,5 +54,5 @@ jobs:
         with:
           app-name: 'middagsasen-planner'
           slot-name: 'beta'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E558EF6DB2DD4CE1A48C01F8EB62AF5D }}
           package: .
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B4216C76977D4B9D885C1F0F154D9293 }}
