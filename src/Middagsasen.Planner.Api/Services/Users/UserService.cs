@@ -112,6 +112,7 @@ namespace Middagsasen.Planner.Api.Services.Users
                 LastName = user.LastName,
                 FullName = $"{user.FirstName ?? ""} {user.LastName ?? ""}".Trim(),
                 IsAdmin = user.IsAdmin,
+                IsHidden = user.IsHidden,
             };
         }
     }
