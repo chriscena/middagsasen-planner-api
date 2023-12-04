@@ -151,7 +151,7 @@ namespace Middagsasen.Planner.Api.Services.Authentication
             return new UserResponse
             {
                 Id = user.UserId,
-                UserName = user.UserName,
+                PhoneNo = user.UserName,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 FullName = $"{user.FirstName ?? ""} {user.LastName ?? ""}".Trim(),
