@@ -20,6 +20,10 @@
         /// </summary>
         /// <param name="dateTime"></param>
         /// <returns></returns>
+        public static string? ToSimpleIsoString(this DateTime? dateTime)
+        {
+            return dateTime.HasValue ? dateTime.Value.ToSimpleIsoString() : null;
+        }
         public static string ToSimpleIsoString(this DateTime dateTime)
         {
             return dateTime.ToString(IsoSimpleDateTime);

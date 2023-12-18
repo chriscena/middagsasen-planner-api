@@ -19,10 +19,10 @@ namespace Middagsasen.Planner.Api.Services.Events
             var eventStatuses = await DbContext.EventStatuses.Where(e => e.StartTime >= startDate && e.StartTime < endDate).ToListAsync();
 
             var response = eventStatuses.Select(e => new
-                {
-                    Date = e.StartTime.ToString("yyyy'/'MM'/'dd"),
-                    IsMissingStaff = e.MissingStaff == 1,
-                })
+            {
+                Date = e.StartTime.ToString("yyyy'/'MM'/'dd"),
+                IsMissingStaff = e.MissingStaff == 1,
+            })
                 .GroupBy(r => r.Date)
                 .Select(g => new EventStatusResponse
                 {
@@ -78,7 +78,8 @@ namespace Middagsasen.Planner.Api.Services.Events
             resourceType.Name = request.Name;
             resourceType.DefaultStaff = request.DefaultStaff;
 
-            if (request.Trainers != null) {
+            if (request.Trainers != null)
+            {
                 foreach (var trainer in request.Trainers)
                 {
                     if (trainer.Id > 0 && trainer.IsDeleted)
@@ -146,6 +147,31 @@ namespace Middagsasen.Planner.Api.Services.Events
                 .SingleOrDefaultAsync(e => e.EventId == id);
 
             return (existingEvent == null) ? null : Map(existingEvent);
+        }
+
+        public async Task<IEnumerable<UserShiftResponse>> GetShiftsByUserId(int id)
+        {
+            var shifts = await DbContext.Shifts
+                .Include(e => e.Resource)
+                    .ThenInclude(e => e.ResourceType)
+                .AsNoTracking()
+                .Where(s => s.UserId == id)
+                .ToListAsync();
+
+            var response = shifts
+                .Select(s => new UserShiftResponse
+                {
+                    Id = s.EventResourceUserId,
+                    StartDate = s.StartTime?.ToString("yyyy'-'MM'-'dd"),
+                    StartTime = s.StartTime.ToSimpleIsoString(),
+                    EndTime = s.EndTime.ToSimpleIsoString(),
+                    ResourceName = s.Resource?.ResourceType?.Name,
+                    Comment = s.Comment,
+                })
+                .OrderByDescending(s => s.StartTime)
+                .ToList();
+
+            return response;
         }
 
         public async Task<EventResponse?> CreateEvent(EventRequest request)
