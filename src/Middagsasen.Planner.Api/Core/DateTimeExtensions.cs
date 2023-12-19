@@ -1,4 +1,4 @@
-﻿namespace Middagsasen.Planner.Api.Services.Events
+﻿namespace Middagsasen.Planner.Api.Core
 {
     public static class DateTimeExtensions
     {

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Middagsasen.Planner.Api.Core;
 using Middagsasen.Planner.Api.Data;
 
 namespace Middagsasen.Planner.Api.Services.Events

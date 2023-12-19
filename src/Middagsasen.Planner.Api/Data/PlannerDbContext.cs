@@ -183,7 +183,7 @@ namespace Middagsasen.Planner.Api.Data
                 entity.Property(e => e.Confirmed).HasColumnType("datetime");
 
                 entity.HasOne(e => e.User)
-                    .WithMany(c => c.ResourceTypeTrainings)
+                    .WithMany(c => c.Trainings)
                     .HasForeignKey(d => d.UserId)
                     .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("FK_ResourceTypeTrainings_Users");
