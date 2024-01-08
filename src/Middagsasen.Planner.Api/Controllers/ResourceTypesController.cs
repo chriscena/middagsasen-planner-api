@@ -56,5 +56,13 @@ namespace Middagsasen.Planner.Api.Controllers
             var resourceType = await ResourceTypesService.DeleteResourceType(id);
             return (resourceType == null) ? NotFound() : Ok(resourceType);
         }
+
+        [HttpPost("{id}/training")]
+        [ProducesResponseType(typeof(TrainingResponse), StatusCodes.Status201Created)]
+        public async Task<IActionResult> CreateTraining(int id, [FromBody] TrainingRequest request)
+        {
+            var training = await ResourceTypesService.CreateTraining(id, request);
+            return Created($"{training.ResourceTypeId}/training/{training.Id}", training);
+        }
     }
 }

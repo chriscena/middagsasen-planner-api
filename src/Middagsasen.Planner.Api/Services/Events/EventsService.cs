@@ -1,17 +1,20 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Middagsasen.Planner.Api.Core;
 using Middagsasen.Planner.Api.Data;
+using Middagsasen.Planner.Api.Services.SmsSender;
 
 namespace Middagsasen.Planner.Api.Services.Events
 {
     public class EventsService : IResourceTypesService, IEventsService, IEventTemplatesService
     {
-        public EventsService(PlannerDbContext dbContext)
+        public EventsService(PlannerDbContext dbContext, ISmsSender smsSender)
         {
             DbContext = dbContext;
+            SmsSender = smsSender;
         }
 
         public PlannerDbContext DbContext { get; }
+        public ISmsSender SmsSender { get; }
 
         public async Task<IEnumerable<EventStatusResponse>> GetEventStatuses(int month, int year)
         {
@@ -118,8 +121,11 @@ namespace Middagsasen.Planner.Api.Services.Events
                 .Include(e => e.Resources)
                     .ThenInclude(r => r.Shifts)
                         .ThenInclude(s => s.User)
+                            .ThenInclude(u =>u.Trainings)
                 .Include(e => e.Resources)
-                    .ThenInclude(r => r.ResourceType);
+                    .ThenInclude(r => r.ResourceType)
+                        .ThenInclude(rt => rt.Trainers)
+                            .ThenInclude(t => t.User);
 
         public async Task<IEnumerable<EventResponse?>> GetEvents()
         {
@@ -254,14 +260,62 @@ namespace Middagsasen.Planner.Api.Services.Events
                 EndTime = request.EndTime,
             };
             DbContext.Shifts.Add(newShift);
+
             await DbContext.SaveChangesAsync();
 
             var responseShift = await DbContext.Shifts
                 .Include(s => s.User)
+                    .ThenInclude(u => u.Trainings)
                 .AsNoTracking()
                 .SingleOrDefaultAsync(s => s.EventResourceUserId == newShift.EventResourceUserId);
             return responseShift == null ? null : Map(responseShift);
         }
+
+        public async Task<TrainingResponse> CreateTraining(int resourceTypeId, TrainingRequest request)
+        {
+            var training = DbContext.ResourceTypeTrainings.Add(new ResourceTypeTraining
+            {
+                UserId = request.UserId,
+                ResourceTypeId = resourceTypeId,
+                TrainingComplete = !request.TrainingCompleted,
+                Confirmed = request.TrainingCompleted ? null : DateTime.UtcNow,
+                ConfirmedBy = request.TrainingCompleted ? null : request.UserId,
+            }).Entity;
+
+            await DbContext.SaveChangesAsync();
+
+            if (!request.TrainingCompleted) return Map(training);
+
+            var user = await DbContext.Users
+                .SingleAsync(u => u.UserId == request.UserId);
+
+            var resourceType = await DbContext.ResourceTypes
+                .SingleAsync(t => t.ResourceTypeId == resourceTypeId);
+
+            var trainers = await DbContext.ResourceTypeTrainers
+                .Include(t => t.User)
+                .AsNoTracking()
+                .Where(t => t.ResourceTypeId == resourceTypeId)
+                .ToListAsync();
+
+            var body = $"Hei {{0}}! {MapFullName(user.FirstName, user.LastName)} ønsker opplæring på {resourceType.Name} og er satt opp på vakt den {request.StartTime.ToString("dd'.'MM'.'yyyy")}.";
+            
+            var messages = new List<SmsMessage>();
+
+            foreach (var trainer in trainers)
+            {
+                var message = new SmsMessage
+                {
+                    ReceiverPhoneNo = trainer.User.UserName.ToNumericPhoneNo(),
+                    Body = string.Format(body, trainer.User.FirstName),
+                };
+                messages.Add(message);
+            }
+
+            if (messages.Any())
+                await SmsSender.SendMessages(messages);
+            return Map(training);
+        } 
 
         public async Task<ShiftResponse?> UpdateShift(int id, ShiftRequest request)
         {
@@ -457,12 +511,24 @@ namespace Middagsasen.Planner.Api.Services.Events
             return await GetEventTemplateById(template.EventTemplateId);
         }
 
+        private TrainingResponse Map(ResourceTypeTraining training) => new TrainingResponse
+        {
+            Id = training.ResourceTypeTrainingId,
+            ResourceTypeId = training.ResourceTypeId,
+            ResourceTypeName = training.ResourceType?.Name,
+            TrainingComplete = training.TrainingComplete,
+            Confirmed = training.Confirmed?.ToSimpleIsoString(),
+            ConfirmedById = training.ConfirmedBy,
+            ConfirmedByName = MapFullName(training.ConfirmedByUser?.FirstName, training.ConfirmedByUser?.LastName),
+        };
+
 
         private ResourceTypeResponse Map(ResourceType resourceType) => new ResourceTypeResponse
         {
             Id = resourceType.ResourceTypeId,
             Name = resourceType.Name,
             DefaultStaff = resourceType.DefaultStaff,
+            HasTraining = resourceType.Trainers.Any(),
             Trainers = resourceType.Trainers.Select(Map).ToList(),
         };
 
@@ -516,6 +582,7 @@ namespace Middagsasen.Planner.Api.Services.Events
             FirstName = user.FirstName,
             LastName = user.LastName,
             FullName = $"{user.FirstName ?? ""} {user.LastName ?? ""}".Trim(),
+            Trainings = user.Trainings.Select(Map).ToList(),
         };
 
         private EventResource Map(ResourceRequest request)
