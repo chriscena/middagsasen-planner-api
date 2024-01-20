@@ -73,6 +73,42 @@ namespace Middagsasen.Planner.Api.Controllers
             var training = await ResourceTypesService.CreateTraining(id, request);
             return Created($"{training.ResourceTypeId}/training/{training.Id}", training);
         }
+
+        [HttpPost("{id}/files")]
+        [ProducesResponseType(typeof(FileInfoResponse), StatusCodes.Status201Created)]
+        public async Task<IActionResult> UploadFile(int id, [FromForm]IFormFile file, [FromForm] string description)
+        {
+            var user = (UserResponse?)HttpContext.Items["User"];
+            if (user == null) return Unauthorized();
+
+            var request = new FileUploadRequest
+            {
+                FileInfo = file,
+                Description = description,
+                UserId = user.Id
+            };
+
+            var response = await ResourceTypesService.AddFile(id, request);
+            return Created($"{response.ResourceTypeId}/files/{response.Id}", response);
+        }
+
+        [HttpGet("{resourceTypeId}/files/{id}")]
+        public async Task<IActionResult> GetFile(int resourceTypeId, int id)
+        {
+            var response = await ResourceTypesService.GetFile(id, resourceTypeId);
+            
+            if (response == null) return NotFound();
+
+            return File(response.Data, response.MimeType, response.FileName);
+        }
+
+        [HttpDelete("{resourceTypeId}/files/{id}")]
+        public async Task<IActionResult> DeleteFile(int resourceTypeId, int id)
+        {
+            await ResourceTypesService.DeleteFile(id, resourceTypeId);
+
+            return Ok();
+        }
     }
 
 }

@@ -5,19 +5,27 @@ namespace Middagsasen.Planner.Api.Services.Storage
 {
     public interface IStorageService
     {
+        Task Save(string filename, Stream stream);
+        Task<byte[]> Read(string filename);
+        Task Delete(string filename);
+    }
 
+    public interface IBlobStorageSettings
+    {
+        string? ConnectionString { get; set; }
+        string? Container { get; set; }
     }
 
     public class BlobStorageService : IStorageService
     {
-        protected string ConnectionString { get; set; }
-        protected string Container { get; set; }
+        protected string? ConnectionString { get; set; }
+        protected string? Container { get; set; }
 
-        public BlobStorageService(string connectionString, string container)
+        public BlobStorageService(IBlobStorageSettings settings)
         {
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-            ConnectionString = connectionString;
-            Container = container;
+            ConnectionString = settings.ConnectionString;
+            Container = settings.Container;
         }
 
         public async Task Save(string fileName, Stream data)

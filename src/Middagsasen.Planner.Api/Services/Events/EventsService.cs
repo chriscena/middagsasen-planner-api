@@ -3,19 +3,22 @@ using Middagsasen.Planner.Api.Core;
 using Middagsasen.Planner.Api.Data;
 using Middagsasen.Planner.Api.Services.ResourceTypes;
 using Middagsasen.Planner.Api.Services.SmsSender;
+using Middagsasen.Planner.Api.Services.Storage;
 
 namespace Middagsasen.Planner.Api.Services.Events
 {
     public class EventsService : IResourceTypesService, IEventsService, IEventTemplatesService
     {
-        public EventsService(PlannerDbContext dbContext, ISmsSender smsSender)
+        public EventsService(PlannerDbContext dbContext, ISmsSender smsSender, IStorageService storage)
         {
             DbContext = dbContext;
             SmsSender = smsSender;
+            Storage = storage;
         }
 
         public PlannerDbContext DbContext { get; }
         public ISmsSender SmsSender { get; }
+        public IStorageService Storage { get; }
 
         public async Task<IEnumerable<EventStatusResponse>> GetEventStatuses(int month, int year)
         {
@@ -39,7 +42,8 @@ namespace Middagsasen.Planner.Api.Services.Events
 
         private IQueryable<ResourceType> ResourceTypes => DbContext.ResourceTypes
                 .Include(r => r.Trainers)
-                    .ThenInclude(t => t.User);
+                    .ThenInclude(t => t.User)
+                .Include(r => r.Files);
 
         public async Task<IEnumerable<ResourceTypeResponse>> GetResourceTypes()
         {
@@ -282,7 +286,7 @@ namespace Middagsasen.Planner.Api.Services.Events
             return responseShift == null ? null : Map(responseShift);
         }
 
-        public async Task<TrainingResponse> CreateTraining(int resourceTypeId, TrainingRequest request)
+        public async Task<TrainingResponse?> CreateTraining(int resourceTypeId, TrainingRequest request)
         {
             if (!request.TrainingCompleted.HasValue) return null;
 
@@ -330,7 +334,7 @@ namespace Middagsasen.Planner.Api.Services.Events
             return Map(training);
         }
 
-        public async Task<TrainingResponse> UpdateTraining(int resourceTypeId, TrainingRequest request)
+        public async Task<TrainingResponse?> UpdateTraining(int resourceTypeId, TrainingRequest request)
         {
             if (!request.TrainingCompleted.HasValue) return null;
 
@@ -604,14 +608,28 @@ namespace Middagsasen.Planner.Api.Services.Events
             DefaultStaff = resourceType.DefaultStaff,
             HasTraining = resourceType.Trainers.Any(),
             Trainers = resourceType.Trainers.Select(Map).ToList(),
+            Files = resourceType.Files.Select(Map).ToList(),
         };
-
+            
         private ResourceTypeTrainerResponse Map(ResourceTypeTrainer resourceTypeTrainer) => new ResourceTypeTrainerResponse
         {
             Id = resourceTypeTrainer.ResourceTypeTrainerId,
             UserId = resourceTypeTrainer.UserId,
             FullName = MapFullName(resourceTypeTrainer.User.FirstName, resourceTypeTrainer.User.LastName),
             PhoneNo = resourceTypeTrainer.User.UserName,
+        };
+
+        private FileInfoResponse Map(ResourceTypeFile file) => new FileInfoResponse
+        {
+            Id = file.ResourceTypeFileId,
+            ResourceTypeId = file.ResourceTypeId,
+            FileName = file.FileName,
+            Description = file.Description,
+            MimeType = file.MimeType,
+            Created = file.Created.ToSimpleIsoString(),
+            CreatedBy = MapFullName(file.CreatedByUser?.FirstName, file.CreatedByUser?.LastName),
+            Updated = file.Updated.ToSimpleIsoString(),
+            UpdatedBy = MapFullName(file.UpdatedByUser?.FirstName, file.UpdatedByUser?.LastName),
         };
 
         private string MapFullName(string? firstName, string? lastName)
@@ -709,6 +727,69 @@ namespace Middagsasen.Planner.Api.Services.Events
                 template.EventTemplateId = resource.Id.Value;
             }
             return template;
+        }
+
+        public async Task<FileInfoResponse> AddFile(int id, FileUploadRequest request)
+        {
+            var now = DateTime.UtcNow;
+            var containerPath = GetContainerPath(now);
+            var storageFileName = Guid.NewGuid().ToString();
+            
+            await Storage.Save($"{containerPath}/{storageFileName}", request.FileInfo.OpenReadStream());
+
+            var newFile = new ResourceTypeFile
+            {
+                StorageName = storageFileName,
+                FileName = request.FileInfo.FileName,
+                Description = request.Description,
+                MimeType  = request.FileInfo.ContentType,
+                ResourceTypeId = id,
+                Created = now,
+                CreatedBy = request.UserId,
+                Updated = now,
+                UpdatedBy = request.UserId,
+               
+            };
+           DbContext.ResourceTypeFiles.Add(newFile);
+           await DbContext.SaveChangesAsync();
+
+            var responseFile = DbContext.ResourceTypeFiles
+                .Include(f => f.ResourceType)
+                .Include(f => f.CreatedByUser)
+                .Include(f => f.UpdatedByUser)
+                .AsNoTracking()
+                .Single(f => f.ResourceTypeFileId == newFile.ResourceTypeFileId);
+
+            return Map(responseFile);
+        }
+
+        private object GetContainerPath(DateTime date)
+        {
+            return $"resourceTypes/{date.Year}/{date.Month:0#}";
+        }
+
+        public async Task<FileResponse> GetFile(int id, int resourceTypeId)
+        {
+            var responseFile = DbContext.ResourceTypeFiles
+                .AsNoTracking()
+                .Single(f => f.ResourceTypeFileId == id && f.ResourceTypeId == resourceTypeId);
+
+            var containerPath = GetContainerPath(responseFile.Created);
+            var fileContent = await Storage.Read($"{containerPath}/{responseFile.StorageName}");
+
+            return new FileResponse { Data = fileContent, FileName = responseFile.FileName, MimeType = responseFile.MimeType };
+        }
+
+        public async Task DeleteFile(int id, int resourceTypeId)
+        {
+            var fileToDelete = DbContext.ResourceTypeFiles
+                .Single(f => f.ResourceTypeFileId == id && f.ResourceTypeId == resourceTypeId);
+
+            var containerPath = GetContainerPath(fileToDelete.Created);
+            await Storage.Delete($"{containerPath}/{fileToDelete.StorageName}");
+
+            var responseFile = DbContext.Remove(fileToDelete);
+            await DbContext.SaveChangesAsync();
         }
     }
 }
