@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Middagsasen.Planner.Api.Core;
 using Middagsasen.Planner.Api.Data;
+using Middagsasen.Planner.Api.Services.ResourceTypes;
 using Middagsasen.Planner.Api.Services.SmsSender;
 
 namespace Middagsasen.Planner.Api.Services.Events

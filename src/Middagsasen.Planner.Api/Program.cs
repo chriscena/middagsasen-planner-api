@@ -6,6 +6,7 @@ using Middagsasen.Planner.Api.Authentication;
 using Middagsasen.Planner.Api.Data;
 using Middagsasen.Planner.Api.Services.Authentication;
 using Middagsasen.Planner.Api.Services.Events;
+using Middagsasen.Planner.Api.Services.ResourceTypes;
 using Middagsasen.Planner.Api.Services.SmsSender;
 using Middagsasen.Planner.Api.Services.Users;
 
