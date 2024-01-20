@@ -7,7 +7,7 @@ using Middagsasen.Planner.Api.Services.Users;
 namespace Middagsasen.Planner.Api.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController, Authorize]
+    [ApiController]
     public class ResourceTypesController : ControllerBase
     {
         public ResourceTypesController(IResourceTypesService resourceTypesService)
@@ -17,14 +17,14 @@ namespace Middagsasen.Planner.Api.Controllers
 
         public IResourceTypesService ResourceTypesService { get; }
 
-        [HttpGet]
+        [HttpGet, Authorize]
         [ProducesResponseType(typeof(IEnumerable<ResourceTypeResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll()
         {
             return Ok(await ResourceTypesService.GetResourceTypes());
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id}"), Authorize]
         [ProducesResponseType(typeof(EventTemplateResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(int id)
         {
@@ -59,7 +59,7 @@ namespace Middagsasen.Planner.Api.Controllers
             return (resourceType == null) ? NotFound() : Ok(resourceType);
         }
 
-        [HttpPost("{id}/training")]
+        [HttpPost("{id}/training"), Authorize]
         [ProducesResponseType(typeof(TrainingResponse), StatusCodes.Status201Created)]
         public async Task<IActionResult> CreateTraining(int id, [FromBody] TrainingRequest request)
         {
@@ -75,6 +75,7 @@ namespace Middagsasen.Planner.Api.Controllers
         }
 
         [HttpPost("{id}/files")]
+        [Authorize(Role = Roles.Administrator)]
         [ProducesResponseType(typeof(FileInfoResponse), StatusCodes.Status201Created)]
         public async Task<IActionResult> UploadFile(int id, [FromForm]IFormFile file, [FromForm] string description)
         {
@@ -103,6 +104,7 @@ namespace Middagsasen.Planner.Api.Controllers
         }
 
         [HttpDelete("{resourceTypeId}/files/{id}")]
+        [Authorize(Role = Roles.Administrator)]
         public async Task<IActionResult> DeleteFile(int resourceTypeId, int id)
         {
             await ResourceTypesService.DeleteFile(id, resourceTypeId);
