@@ -130,7 +130,10 @@ namespace Middagsasen.Planner.Api.Services.Events
                 .Include(e => e.Resources)
                     .ThenInclude(r => r.ResourceType)
                         .ThenInclude(rt => rt.Trainers)
-                            .ThenInclude(t => t.User);
+                            .ThenInclude(t => t.User)
+                .Include(e => e.Resources)
+                    .ThenInclude(r => r.ResourceType)
+                        .ThenInclude(rt => rt.Files);
 
         public async Task<IEnumerable<EventResponse?>> GetEvents()
         {
